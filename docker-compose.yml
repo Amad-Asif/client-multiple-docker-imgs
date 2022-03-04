@@ -1,0 +1,49 @@
+version: "3"
+services:
+  # Postgres service
+  postgres:
+    image: 'postgres:latest'
+  # Redis Service
+  redis:
+    image: 'redis:latest'
+  # Nginx Service
+  nginx:
+    restart: always # Always makes sure nginx is up
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./nginx
+    ports:
+    - '3050:80' # Map port 3050 to 80 for nginx
+  # The server service
+  api:
+    build:
+      dockerfile: Dockerfile.dev # When defining dockerfile we only define file-name and not path
+      context: ./server # the path is defined in the context
+    volumes:
+      - /app/node_modules # Don't try to override this folder
+      - ./server:/app # Any changes in server folder will automatically be reflected in app folder, making sure we don't have to rebuild every time code changes
+    # Set up some environment variables that are applied at runtime, these will be setup at run-time
+    environment:
+      - REDIS_HOST=redis # Any service defined in docker-compose can be referred directly by service name
+      - REDIS_PORT=6379
+      - PGUSER=postgres
+      - PGHOST=postgres # The name of postgres service defined above
+      - PGDATABASE=postgres
+      - PGPASSWORD=postgres_password
+      - PGPORT=5432
+  # The Client Service
+  client:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./client
+    volumes:
+      - /app/node_modules # Don't try to override this folder
+      - ./client:/app # Any changes in server folder will automatically be reflected in app folder, making sure we don't have to rebuild every time code changes
+  # The Worker Service
+  worker:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./worker
+    volumes:
+      - /app/node_modules # Don't try to override this folder
+      - ./worker:/app # Any changes in worker folder will automatically be reflected in app folder, making sure we don't have to rebuild every time code changes
