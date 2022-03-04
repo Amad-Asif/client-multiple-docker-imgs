@@ -1,0 +1,23 @@
+sudo: required
+services:
+  - docker
+
+before_install:
+  - docker build -t amadasif/react-test -f ./client/Dockerfile.dev ./client
+
+script:
+  - docker run amadasif/react-test npm test -- --coverage
+
+# Build images for each of these
+after_success:
+  - docker build -t amadasif/multi-client ./client
+  - docker build -t amadasif/multi-nginx ./nginx
+  - docker build -t amadasif/multi-server ./server
+  - docker build -t amadasif/multi-worker ./worker
+  # Login to docker CLI, the email and password will be set as env variables in travis
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  # Take these images and push images to docker-hub
+  - docker push amadasif/multi-client
+  - docker push amadasif/multi-nginx
+  - docker push amadasif/multi-server
+  - docker push amadasif/multi-worker
